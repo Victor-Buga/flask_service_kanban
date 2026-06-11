@@ -2,7 +2,7 @@
 Arthur, Victor, Amine, Sabiledine
 
 # Structure des commits : 
-"<type>(<service>)" : <description courte en 50 caractères max>
+type <service> : <description courte en 50 caractères max>
 # Exemples :
 feat(s1): ajoute la route POST /matrices/multiply feat(s2): implémente le calcul de corrélation de Pearson
 fix(s3): corrige la connexion MySQL avec gestion d'erreur
