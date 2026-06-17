@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test client HTML/JS — Service 2</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 30px auto; }
+    button { font-size: 16px; padding: 10px 18px; cursor: pointer; }
+    #summary { font-weight: bold; margin: 15px 0; }
+    li { margin: 4px 0; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <h1>Tests client — Service 2</h1>
+  <p>⚠️ Le serveur doit tourner sur le port 5002 (python app.py).</p>
+  <button id="run">Lancer tous les tests</button>
+  <div id="summary"></div>
+  <ul id="results"></ul>
+
+  <script>
+    const BASE_URL = "http://localhost:5002";
+
+    // Envoie une requête POST JSON et renvoie { status, data }
+    async function post(route, payload) {
+      const res = await fetch(BASE_URL + route, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      return { status: res.status, data };
+    }
+
+    // Chaque test renvoie null si OK, sinon un message d'erreur.
+    const tests = {
+      "describe — valeurs connues [1..5]": async () => {
+        const { status, data } = await post("/stats/describe", { data: [1,2,3,4,5] });
+        if (status !== 200) return "status attendu 200, reçu " + status;
+        const r = data.resultat;
+        if (r.n !== 5) return "n attendu 5, reçu " + r.n;
+        if (Math.abs(r.moyenne - 3.0) > 0.001) return "moyenne attendue 3, reçue " + r.moyenne;
+        if (Math.abs(r.ecart_type - 1.5811) > 0.001) return "ecart_type attendu 1.5811, reçu " + r.ecart_type;
+        return null;
+      },
+      "describe — clé manquante → 400": async () => {
+        const { status } = await post("/stats/describe", { valeurs: [1,2,3] });
+        return status === 400 ? null : "status attendu 400, reçu " + status;
+      },
+      "correlation — forte (r=1)": async () => {
+        const { status, data } = await post("/stats/correlation", { x:[1,2,3,4,5], y:[2,4,6,8,10] });
+        if (status !== 200) return "status attendu 200, reçu " + status;
+        if (Math.abs(data.resultat.r - 1.0) > 0.001) return "r attendu 1, reçu " + data.resultat.r;
+        if (data.resultat.interpretation !== "forte") return "interpretation attendue 'forte'";
+        return null;
+      },
+      "correlation — longueurs différentes → 400": async () => {
+        const { status } = await post("/stats/correlation", { x:[1,2,3], y:[1,2] });
+        return status === 400 ? null : "status attendu 400, reçu " + status;
+      },
+      "test_normalite — structure": async () => {
+        const { status, data } = await post("/stats/test_normalite", { data:[2.1,2.3,1.9,2.0,2.2,2.05,1.95,2.15] });
+        if (status !== 200) return "status attendu 200, reçu " + status;
+        if (typeof data.resultat.est_normale !== "boolean") return "est_normale doit être un booléen";
+        return null;
+      },
+      "test_student — différence significative": async () => {
+        const { status, data } = await post("/stats/test_student", { groupe1:[1,2,3,4,5], groupe2:[6,7,8,9,10] });
+        if (status !== 200) return "status attendu 200, reçu " + status;
+        if (!data.resultat.difference_significative) return "différence attendue significative";
+        return null;
+      }
+    };
+
+    async function runAll() {
+      const results = document.getElementById("results");
+      const summary = document.getElementById("summary");
+      results.innerHTML = "";
+      summary.textContent = "Tests en cours...";
+      let pass = 0, fail = 0;
+      for (const [name, fn] of Object.entries(tests)) {
+        let err;
+        try { err = await fn(); }
+        catch (e) { err = "erreur réseau : " + e.message + " (serveur lancé ?)"; }
+        const li = document.createElement("li");
+        if (err === null) {
+          pass++;
+          li.textContent = "✓ " + name;
+          li.style.color = "green";
+        } else {
+          fail++;
+          li.textContent = "✗ " + name + " — " + err;
+          li.style.color = "red";
+        }
+        results.appendChild(li);
+      }
+      summary.textContent = pass + " réussis, " + fail + " échoués (" + (pass + fail) + " au total)";
+    }
+
+    document.getElementById("run").addEventListener("click", runAll);
+  </script>
+</body>
+</html>
