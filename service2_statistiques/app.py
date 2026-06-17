@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import numpy as np
 from scipy import stats
 
 app = Flask(__name__)
+CORS(app)
 
 
 def validate_data(data, key='data'):
