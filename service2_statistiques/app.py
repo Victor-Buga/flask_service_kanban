@@ -18,6 +18,7 @@ def validate_data(data, key='data'):
 
 
 # Route 1 — Description statistique : POST /stats/describe
+# calcule les principales statistiques d'une série de nombres : tendance centrale, dispersion, valeurs extrêmes et quartiles.
 @app.route('/stats/describe', methods=['POST'])
 def describe():
     data = request.get_json()
@@ -41,6 +42,7 @@ def describe():
 
 
 # Route 2 — Corrélation : POST /stats/correlation
+# calcule le coefficient de corrélation de Pearson entre deux séries x et y
 @app.route('/stats/correlation', methods=['POST'])
 def correlation():
     data = request.get_json()
@@ -69,6 +71,7 @@ def correlation():
 
 
 # Route 3 — Test de normalité : POST /stats/test_normalite
+# applique le test de Shapiro-Wilk pour déterminer si une série suit une loi normale 
 @app.route('/stats/test_normalite', methods=['POST'])
 def test_normalite():
     data = request.get_json()
@@ -94,6 +97,7 @@ def test_normalite():
 
 
 # Route supplémentaire — Test t de Student : POST /stats/test_student
+# applique le test t de Student pour comparer les moyennes de deux groupes indépendants et déterminer si leur différence est statistiquement significative 
 @app.route('/stats/test_student', methods=['POST'])
 def test_student():
     data = request.get_json()
