@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify
 import numpy as np
 from matrices import (f_add_matrices, f_multiply_matrices,
                       f_transpose_matrices, f_determinant_matrices,
@@ -97,6 +97,10 @@ def inverse_matrix():
     except (ValueError, TypeError) as e:    # Gestion des erreurs de parsing ou de type
         return jsonify({'erreur': str(e)}), 400 # Retourne un code HTTP 400 (Bad Request) avec le message d'erreur
 
+# ── Route pour servir le HTML ──
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 # Lancement du serveur en mode debug sur le port 5001
 if __name__ == '__main__':
