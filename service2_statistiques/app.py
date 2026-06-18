@@ -6,7 +6,7 @@ from scipy import stats
 app = Flask(__name__)
 CORS(app)
 
-
+# fonction utilitaire réutilisée par toutes les routes pour vérifier les données reçues avant tout calcul
 def validate_data(data, key='data'):
     """Valide et retourne une liste de nombres."""
     if key not in data:
