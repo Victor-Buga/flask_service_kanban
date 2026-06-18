@@ -1,9 +1,13 @@
-from flask import Flask, request, jsonify 
+from flask import Flask, request, jsonify, render_template
 import numpy as np 
 from scipy import stats 
 from db import fetch_series 
 
 app = Flask(__name__)
+
+@app.route("/")
+def accueil():
+    return render_template("test.html")
 
 @app.route('/db/stats/describe', methods=['GET']) 
 def db_describe():
