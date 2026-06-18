@@ -71,7 +71,7 @@ def correlation():
 
 
 # Route 3 — Test de normalité : POST /stats/test_normalite
-# applique le test de Shapiro-Wilk pour déterminer si une série suit une loi normale 
+# détermine si une série suit une loi normale 
 @app.route('/stats/test_normalite', methods=['POST'])
 def test_normalite():
     data = request.get_json()
