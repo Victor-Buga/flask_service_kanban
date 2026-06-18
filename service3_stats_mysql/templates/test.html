@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<button onclick="testDescribe()">Tester describe</button>
+<button onclick="testCorrelation()">Tester correlation</button>
+
+<h3>Résultat :</h3>
+<pre id="resultat"></pre>
+
+<script>
+async function testDescribe() {
+    const response = await fetch(
+        "http://127.0.0.1:5003/db/stats/describe?serie=serie_A"
+    );
+
+    const data = await response.json();
+
+    document.getElementById("resultat").innerText =
+        JSON.stringify(data, null, 2);
+}
+
+async function testCorrelation() {
+    const response = await fetch(
+        "/db/stats/correlation?serie_x=serie_A&serie_y=serie_B"
+    );
+
+    const data = await response.json();
+
+    document.getElementById("resultat").innerText =
+        JSON.stringify(data, null, 2);
+
+}
+</script>
+
+</body>
+</html>
