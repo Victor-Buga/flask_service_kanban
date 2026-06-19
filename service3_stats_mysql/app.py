@@ -15,7 +15,7 @@ def db_describe():
     if not nom_serie:
         return jsonify({'erreur': "Paramètre 'serie' manquant"}), 400     
     try:
-        values = np.array(fetch_series(nom_serie))         
+        values = np.array( fetch_series(nom_serie))       
         result = {'serie': nom_serie,
                   'n': int(len(values)), 
                   'moyenne': round(float(np.mean(values)), 4), 
@@ -40,7 +40,7 @@ def db_correlation():
         x = np.array(fetch_series(serie_x))         
         y = np.array(fetch_series(serie_y))         
         n = min(len(x), len(y))         
-        x, y = x[:n], y[:n]  # Aligner les longueurs         
+        x, y = x[:n], y[:n]         
         r, p_value = stats.pearsonr(x, y)         
         return jsonify({
             'source': 'mysql',
