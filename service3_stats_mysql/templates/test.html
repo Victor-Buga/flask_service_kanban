@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Tests des routes - API Stats</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; }
+    p.sub { color: #94a3b8; margin-top: 0; }
+    .config {
+        background: #1e293b;
+        padding: 14px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+    .config label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; }
+    .config input {
+        background: #0f172a;
+        border: 1px solid #334155;
+        color: #e2e8f0;
+        padding: 6px 10px;
+        border-radius: 6px;
+        margin-right: 16px;
+        margin-bottom: 10px;
+    }
+    button {
+        background: #6366f1;
+        color: white;
+        border: none;
+        padding: 12px 22px;
+        font-size: 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        margin: 8px 0 16px 0;
+    }
+    button:hover { background: #4f46e5; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+ 
+    #summary { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .badge { padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
+    .badge.total { background: #1e293b; }
+    .badge.ok { background: #14532d; color: #bbf7d0; }
+    .badge.fail { background: #7f1d1d; color: #fecaca; }
+ 
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; vertical-align: top; }
+    th { color: #94a3b8; font-weight: 600; }
+    tr.pass td.status { color: #4ade80; }
+    tr.fail td.status { color: #f87171; }
+    .status { font-weight: 700; white-space: nowrap; }
+    pre.detail {
+        background: #1e293b;
+        color: #cbd5e1;
+        padding: 8px;
+        border-radius: 6px;
+        white-space: pre-wrap;
+        font-size: 0.78rem;
+        margin: 4px 0 0 0;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    #loading { color: #94a3b8; font-style: italic; }
+</style>
+</head>
+<body>
+ 
+    <h1>Tests des routes</h1>
+ 
+    <div class="config">
+        <label>Nom d'une série existante (pour /describe)</label>
+        <input id="serie-existante" value="serie_A" />
+ 
+        <label>Deuxième série existante (pour /correlation)</label>
+        <input id="serie-existante-2" value="serie_B" />
+    </div>
+ 
+    <button id="run-btn" onclick="runTests()">Lancer les tests</button>
+    <div id="loading" style="display:none;">Exécution des tests en cours...</div>
+ 
+    <div id="summary" style="display:none;"></div>
+    <table id="results-table" style="display:none;">
+        <thead>
+            <tr>
+                <th style="width:80px;">Statut</th>
+                <th>Test</th>
+                <th>Détail</th>
+            </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+    </table>
+ 
+<script>
+
+function assertEqual(actual, expected, message) {
+    if (actual !== expected) {
+        throw new Error(`${message || 'Échec'} : attendu ${JSON.stringify(expected)}, obtenu ${JSON.stringify(actual)}`);
+    }
+}
+ 
+function assertTrue(condition, message) {
+    if (!condition) {
+        throw new Error(message || 'Condition fausse');
+    }
+}
+ 
+function assertClose(actual, expected, tolerance, message) {
+    if (Math.abs(actual - expected) > tolerance) {
+        throw new Error(`${message || 'Échec'} : attendu ~${expected}, obtenu ${actual}`);
+    }
+}
+ 
+async function getJson(url) {
+    const response = await fetch(url);
+    let data;
+    try {
+        data = await response.json();
+    } catch (e) {
+        data = null;
+    }
+    return { status: response.status, data };
+}
+ 
+//tests
+ 
+function buildTests() {
+    const serieExistante = document.getElementById('serie-existante').value.trim();
+    const serieExistante2 = document.getElementById('serie-existante-2').value.trim();
+ 
+    return [
+        {
+            nom: "GET /db/stats/describe sans paramètre 'serie' -> 400",
+            run: async () => {
+                const { status, data } = await getJson('/db/stats/describe');
+                assertEqual(status, 400, "Code HTTP");
+                assertTrue(data && 'erreur' in data, "Champ 'erreur' présent");
+            }
+        },
+        {
+            nom: `GET /db/stats/describe?serie=${serieExistante} -> 200 avec champs attendus`,
+            run: async () => {
+                const { status, data } = await getJson(`/db/stats/describe?serie=${encodeURIComponent(serieExistante)}`);
+                assertEqual(status, 200, "Code HTTP");
+                assertTrue(data.resultat, "Champ 'resultat' présent");
+                const r = data.resultat;
+                ['n', 'moyenne', 'mediane', 'ecart_type', 'minimum', 'maximum'].forEach(champ => {
+                    assertTrue(champ in r, `Champ '${champ}' présent dans le résultat`);
+                });
+                assertTrue(r.n > 0, "n > 0");
+                assertTrue(r.minimum <= r.moyenne && r.moyenne <= r.maximum, "minimum <= moyenne <= maximum");
+            }
+        },
+        {
+            nom: "GET /db/stats/describe?serie=__inexistante__ -> 404",
+            run: async () => {
+                const { status, data } = await getJson('/db/stats/describe?serie=__inexistante__');
+                assertEqual(status, 404, "Code HTTP");
+                assertTrue(data && 'erreur' in data, "Champ 'erreur' présent");
+            }
+        },
+        {
+            nom: "GET /db/stats/correlation sans paramètres -> 400",
+            run: async () => {
+                const { status } = await getJson('/db/stats/correlation');
+                assertEqual(status, 400, "Code HTTP");
+            }
+        },
+        {
+            nom: "GET /db/stats/correlation avec un seul paramètre -> 400",
+            run: async () => {
+                const { status } = await getJson(`/db/stats/correlation?serie_x=${serieExistante}`);
+                assertEqual(status, 400, "Code HTTP");
+            }
+        },
+        {
+            nom: `GET /db/stats/correlation?serie_x=${serieExistante}&serie_y=${serieExistante2} -> 200 avec r entre -1 et 1`,
+            run: async () => {
+                const url = `/db/stats/correlation?serie_x=${encodeURIComponent(serieExistante)}&serie_y=${encodeURIComponent(serieExistante2)}`;
+                const { status, data } = await getJson(url);
+                assertEqual(status, 200, "Code HTTP");
+                assertTrue(data.resultat, "Champ 'resultat' présent");
+                const r = data.resultat.r;
+                assertTrue(r >= -1 - 1e-6 && r <= 1 + 1e-6, "r dans [-1, 1]");
+                assertTrue('p_value' in data.resultat, "Champ 'p_value' présent");
+                assertTrue('significatif' in data.resultat, "Champ 'significatif' présent");
+            }
+        },
+        {
+            nom: "GET /db/stats/correlation avec serie_x inexistante -> 404",
+            run: async () => {
+                const url = `/db/stats/correlation?serie_x=__inexistante__&serie_y=${encodeURIComponent(serieExistante2)}`;
+                const { status } = await getJson(url);
+                assertEqual(status, 404, "Code HTTP");
+            }
+        },
+        {
+            nom: `GET /db/stats/correlation?serie_x=X&serie_y=X -> r ≈ 1 (auto-corrélation)`,
+            run: async () => {
+                const url = `/db/stats/correlation?serie_x=${encodeURIComponent(serieExistante)}&serie_y=${encodeURIComponent(serieExistante)}`;
+                const { status, data } = await getJson(url);
+                assertEqual(status, 200, "Code HTTP");
+                assertClose(data.resultat.r, 1.0, 1e-3, "r d'une série avec elle-même");
+            }
+        }
+    ];
+}
+ 
+//Exécution et affichage
+ 
+async function runTests() {
+    const btn = document.getElementById('run-btn');
+    const loading = document.getElementById('loading');
+    const summary = document.getElementById('summary');
+    const table = document.getElementById('results-table');
+    const body = document.getElementById('results-body');
+ 
+    btn.disabled = true;
+    loading.style.display = 'block';
+    summary.style.display = 'none';
+    table.style.display = 'none';
+    body.innerHTML = '';
+ 
+    const tests = buildTests();
+    let reussis = 0;
+    let echoues = 0;
+ 
+    for (const test of tests) {
+        const tr = document.createElement('tr');
+        try {
+            await test.run();
+            reussis++;
+            tr.className = 'pass';
+            tr.innerHTML = `<td class="status">OK</td><td>${escapeHtml(test.nom)}</td><td></td>`;
+        } catch (err) {
+            echoues++;
+            tr.className = 'fail';
+            tr.innerHTML = `<td class="status">FAIL</td><td>${escapeHtml(test.nom)}</td><td><pre class="detail">${escapeHtml(err.message)}</pre></td>`;
+        }
+        body.appendChild(tr);
+    }
+ 
+    summary.innerHTML = `
+        <div class="badge total">Total : ${tests.length}</div>
+        <div class="badge ok">Réussis : ${reussis}</div>
+        <div class="badge fail">Échoués : ${echoues}</div>
+    `;
+ 
+    loading.style.display = 'none';
+    summary.style.display = 'flex';
+    table.style.display = 'table';
+    btn.disabled = false;
+}
+ 
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+</script>
+ 
+</body>
+</html>

@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Service 1 — Calculs Matriciels</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f1419;
+            color: #e6edf3;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* ── Header ── */
+        header {
+            background: linear-gradient(135deg, #1a2332 0%, #0d1821 100%);
+            border: 1px solid #2d4a6b;
+            border-radius: 12px;
+            padding: 28px 32px;
+            margin-bottom: 28px;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 1.8rem;
+            color: #58a6ff;
+            margin-bottom: 6px;
+        }
+        header p {
+            color: #8b949e;
+            font-size: 0.9rem;
+        }
+        .service-url {
+            display: inline-block;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #79c0ff;
+            margin-top: 10px;
+        }
+
+        /* ── Master controls ── */
+        .master-bar {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            text-align: center;
+        }
+        .master-bar h2 {
+            font-size: 1.1rem;
+            color: #8b949e;
+            margin-bottom: 14px;
+        }
+        #btn-all {
+            background: linear-gradient(135deg, #238636 0%, #1a6330 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 13px 36px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.3px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        #btn-all:hover { background: linear-gradient(135deg, #2ea043 0%, #238636 100%); transform: translateY(-1px); }
+        #btn-all:active { transform: translateY(0); }
+        #btn-all:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ── Summary ── */
+        #summary {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 16px 24px;
+            margin-bottom: 28px;
+            display: none;
+        }
+        #summary h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #c9d1d9;
+        }
+        #summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+        #summary-table th, #summary-table td {
+            padding: 6px 10px;
+            text-align: left;
+            border-bottom: 1px solid #21262d;
+        }
+        #summary-table th {
+            color: #8b949e;
+            font-weight: 600;
+        }
+        #summary-table .pass { color: #3fb950; font-weight: 700; }
+        #summary-table .fail { color: #f85149; font-weight: 700; }
+
+        /* ── Route sections ── */
+        .route-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .route-header {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            background: #0d1117;
+            cursor: pointer;
+            user-select: none;
+        }
+        .route-header h3 {
+            flex: 1;
+            font-size: 0.95rem;
+            color: #c9d1d9;
+        }
+        .route-method {
+            background: #1f6feb;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 4px;
+            margin-right: 12px;
+        }
+        .route-path {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #79c0ff;
+            margin-right: 14px;
+        }
+        .collapse-icon {
+            font-size: 1.1rem;
+            color: #8b949e;
+            transition: transform 0.2s;
+        }
+        .route-header.collapsed .collapse-icon { transform: rotate(-90deg); }
+        .route-body {
+            padding: 18px 20px;
+            display: block;
+        }
+        .route-body.hidden { display: none; }
+
+        /* ── Form inside each section ── */
+        .field-label {
+            font-size: 0.82rem;
+            color: #8b949e;
+            margin-bottom: 6px;
+            display: block;
+        }
+        textarea {
+            width: 100%;
+            height: 130px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            padding: 10px 12px;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+        textarea:focus { outline: none; border-color: #58a6ff; }
+        .btn-test {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 8px 22px;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .btn-test:hover { background: #30363d; border-color: #58a6ff; }
+
+        /* ── Response area ── */
+        .response-area {
+            margin-top: 14px;
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.78rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+        }
+        .response-area.status-2xx { background: #0d2119; border: 1px solid #196c2e; color: #3fb950; }
+        .response-area.status-4xx { background: #2d1c0f; border: 1px solid #6e4b1a; color: #d29922; }
+        .response-area.status-error { background: #2d0f0f; border: 1px solid #6e1a1a; color: #f85149; }
+        .response-area.idle { background: #0d1117; border: 1px solid #21262d; color: #484f58; }
+
+        .status-badge {
+            display: inline-block;
+            font-weight: 700;
+            min-width: 38px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-align: center;
+            margin-right: 10px;
+        }
+        .status-badge.ok { background: #196c2e; color: #3fb950; }
+        .status-badge.warn { background: #6e4b1a; color: #d29922; }
+        .status-badge.err { background: #6e1a1a; color: #f85149; }
+
+        /* ── Test-case list (inline) ── */
+        .test-cases { margin-top: 16px; border-top: 1px solid #21262d; padding-top: 14px; }
+        .test-cases h4 {
+            font-size: 0.8rem;
+            color: #8b949e;
+            margin-bottom: 8px;
+        }
+        .tc-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+            font-size: 0.78rem;
+        }
+        .tc-badge {
+            min-width: 52px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.72rem;
+        }
+        .tc-badge.pass { background: #0d2119; color: #3fb950; }
+        .tc-badge.fail { background: #2d0f0f; color: #f85149; }
+        .tc-badge.pending { background: #21262d; color: #484f58; }
+        .tc-name { color: #c9d1d9; flex: 1; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ── Header ── -->
+    <header>
+        <h1>🧮 Test Service 1 — Calculs Matriciels</h1>
+        <p>API Flask · NumPy &nbsp;|&nbsp; 5 routes · tests automatisés</p>
+        <div class="service-url">http://localhost:5001</div>
+    </header>
+
+    <!-- ── Master controls ── -->
+    <div class="master-bar">
+        <h2>⚡ Tests automatisés</h2>
+        <button id="btn-all" onclick="runAllTests()">🚀 Lancer tous les tests</button>
+    </div>
+
+    <!-- ── Summary table ── -->
+    <div id="summary">
+        <h3 id="summary-title">Résultats</h3>
+        <table id="summary-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Route</th>
+                    <th>Cas</th>
+                    <th>Attendu</th>
+                    <th>Obtenu</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody id="summary-body"></tbody>
+        </table>
+    </div>
+
+    <!-- ════════════════════════════════
+         Route: /matrices/add
+    ════════════════════════════════ -->
+    <div class="route-section" id="sec-add">
+        <div class="route-header" onclick="toggleSection('add')">
+            <span class="route-method">POST</span>
+            <span class="route-path">/matrices/add</span>
+            <h3>Addition de matrices</h3>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="route-body" id="body-add">
+            <label class="field-label">Corps JSON</label>
+            <textarea id="json-add">{
+  "A": [[1, 2], [3, 4]],
+  "B": [[5, 6], [7, 8]]
+}</textarea>
+            <button class="btn-test" onclick="manualTest('add')">Tester</button>
+            <div class="response-area idle" id="resp-add">Cliquez sur "Tester" pour voir la réponse…</div>
+
+            <div class="test-cases">
+                <h4>Tests automatisés</h4>
+                <div id="tc-add"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════
+         Route: /matrices/multiply
+    ════════════════════════════════ -->
+    <div class="route-section" id="sec-multiply">
+        <div class="route-header" onclick="toggleSection('multiply')">
+            <span class="route-method">POST</span>
+            <span class="route-path">/matrices/multiply</span>
+            <h3>Multiplication de matrices</h3>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="route-body" id="body-multiply">
+            <label class="field-label">Corps JSON</label>
+            <textarea id="json-multiply">{
+  "A": [[1, 2], [3, 4]],
+  "B": [[5, 6], [7, 8]]
+}</textarea>
+            <button class="btn-test" onclick="manualTest('multiply')">Tester</button>
+            <div class="response-area idle" id="resp-multiply">Cliquez sur "Tester" pour voir la réponse…</div>
+
+            <div class="test-cases">
+                <h4>Tests automatisés</h4>
+                <div id="tc-multiply"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════
+         Route: /matrices/transpose
+    ════════════════════════════════ -->
+    <div class="route-section" id="sec-transpose">
+        <div class="route-header" onclick="toggleSection('transpose')">
+            <span class="route-method">POST</span>
+            <span class="route-path">/matrices/transpose</span>
+            <h3>Transposition de matrice</h3>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="route-body" id="body-transpose">
+            <label class="field-label">Corps JSON</label>
+            <textarea id="json-transpose">{
+  "A": [[1, 2, 3], [4, 5, 6]]
+}</textarea>
+            <button class="btn-test" onclick="manualTest('transpose')">Tester</button>
+            <div class="response-area idle" id="resp-transpose">Cliquez sur "Tester" pour voir la réponse…</div>
+
+            <div class="test-cases">
+                <h4>Tests automatisés</h4>
+                <div id="tc-transpose"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════
+         Route: /matrices/determinant
+    ════════════════════════════════ -->
+    <div class="route-section" id="sec-determinant">
+        <div class="route-header" onclick="toggleSection('determinant')">
+            <span class="route-method">POST</span>
+            <span class="route-path">/matrices/determinant</span>
+            <h3>Déterminant de matrice</h3>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="route-body" id="body-determinant">
+            <label class="field-label">Corps JSON</label>
+            <textarea id="json-determinant">{
+  "A": [[4, 7], [2, 6]]
+}</textarea>
+            <button class="btn-test" onclick="manualTest('determinant')">Tester</button>
+            <div class="response-area idle" id="resp-determinant">Cliquez sur "Tester" pour voir la réponse…</div>
+
+            <div class="test-cases">
+                <h4>Tests automatisés</h4>
+                <div id="tc-determinant"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════
+         Route: /matrices/inverse
+    ════════════════════════════════ -->
+    <div class="route-section" id="sec-inverse">
+        <div class="route-header" onclick="toggleSection('inverse')">
+            <span class="route-method">POST</span>
+            <span class="route-path">/matrices/inverse</span>
+            <h3>Inversion de matrice</h3>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="route-body" id="body-inverse">
+            <label class="field-label">Corps JSON</label>
+            <textarea id="json-inverse">{
+  "A": [[4, 7], [2, 6]]
+}</textarea>
+            <button class="btn-test" onclick="manualTest('inverse')">Tester</button>
+            <div class="response-area idle" id="resp-inverse">Cliquez sur "Tester" pour voir la réponse…</div>
+
+            <div class="test-cases">
+                <h4>Tests automatisés</h4>
+                <div id="tc-inverse"></div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /container -->
+
+<script>
+const BASE = 'http://localhost:5001';
+
+// ─── Test definitions ────────────────────────────────────────────────────────
+const TEST_CASES = {
+    add: [
+        {
+            name: 'Addition valide 2×2',
+            body: { A: [[1, 2], [3, 4]], B: [[5, 6], [7, 8]] },
+            expectStatus: 200,
+            expectResult: [[6, 8], [10, 12]],
+        },
+        {
+            name: 'Addition valide 1×3',
+            body: { A: [[1, 2, 3]], B: [[4, 5, 6]] },
+            expectStatus: 200,
+            expectResult: [[5, 7, 9]],
+        },
+        {
+            name: 'Dimensions incompatibles',
+            body: { A: [[1, 2]], B: [[1, 2, 3]] },
+            expectStatus: 400,
+            expectResult: undefined,
+        },
+    ],
+    multiply: [
+        {
+            name: 'Multiplication valide 2×2',
+            body: { A: [[1, 2], [3, 4]], B: [[5, 6], [7, 8]] },
+            expectStatus: 200,
+            expectResult: [[19, 22], [43, 50]],
+        },
+        {
+            name: 'Multiplication 2×3 × 3×2',
+            body: { A: [[1, 2, 3], [4, 5, 6]], B: [[7, 8], [9, 10], [11, 12]] },
+            expectStatus: 200,
+            expectResult: [[58, 64], [139, 154]],
+        },
+        {
+            name: 'Dimensions incompatibles',
+            body: { A: [[1, 2]], B: [[1, 2, 3]] },
+            expectStatus: 400,
+            expectResult: undefined,
+        },
+    ],
+    transpose: [
+        {
+            name: 'Transposition 2×3',
+            body: { A: [[1, 2, 3], [4, 5, 6]] },
+            expectStatus: 200,
+            expectResult: [[1, 4], [2, 5], [3, 6]],
+        },
+        {
+            name: 'Transposition 3×2',
+            body: { A: [[1, 4], [2, 5], [3, 6]] },
+            expectStatus: 200,
+            expectResult: [[1, 2, 3], [4, 5, 6]],
+        },
+    ],
+    determinant: [
+        {
+            name: 'Déterminant 2×2 (résultat 10)',
+            body: { A: [[4, 7], [2, 6]] },
+            expectStatus: 200,
+            expectResult: 10,
+        },
+        {
+            name: 'Déterminant identité 2×2 (résultat 1)',
+            body: { A: [[1, 0], [0, 1]] },
+            expectStatus: 200,
+            expectResult: 1,
+        },
+        {
+            name: 'Matrice singulière (dét = 0)',
+            body: { A: [[1, 2], [2, 4]] },
+            expectStatus: 200,
+            expectResult: 0,
+        },
+    ],
+    inverse: [
+        {
+            name: 'Inverse 2×2 [[4,7],[2,6]]',
+            body: { A: [[4, 7], [2, 6]] },
+            expectStatus: 200,
+            // A⁻¹ = (1/det) * [[6,-7],[-2,4]] = [[0.6,-0.7],[-0.2,0.4]]
+            expectResult: [[0.6, -0.7], [-0.2, 0.4]],
+        },
+        {
+            name: 'Inverse identité 2×2',
+            body: { A: [[1, 0], [0, 1]] },
+            expectStatus: 200,
+            expectResult: [[1, 0], [0, 1]],
+        },
+        {
+            name: 'Inverse matrice singulière',
+            body: { A: [[1, 2], [2, 4]] },
+            expectStatus: 400,
+            expectResult: undefined,
+        },
+    ],
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function toggleSection(id) {
+    const hdr = document.getElementById('sec-' + id).querySelector('.route-header');
+    const body = document.getElementById('body-' + id);
+    hdr.classList.toggle('collapsed');
+    body.classList.toggle('hidden');
+}
+
+function flatten(v) {
+    return JSON.parse(JSON.stringify(v));
+}
+
+function arraysClose(a, b, tol=1e-9) {
+    if (typeof a !== typeof b) return false;
+    if (Array.isArray(a)) {
+        if (!Array.isArray(b) || a.length !== b.length) return false;
+        return a.every((v, i) => arraysClose(v, b[i], tol));
+    }
+    return Math.abs(a - b) < tol;
+}
+
+function compareResults(actual, expected) {
+    if (expected === undefined) return false;
+    return arraysClose(flatten(actual), flatten(expected));
+}
+
+function statusClass(code) {
+    if (code >= 200 && code < 300) return 'ok';
+    if (code >= 400 && code < 500) return 'warn';
+    return 'err';
+}
+
+function renderResponse(el, status, body) {
+    el.className = 'response-area';
+    if (status === null) {
+        el.classList.add('status-error');
+        el.innerHTML = `<span class="status-badge err">ERR</span>${body}`;
+    } else if (status >= 200 && status < 300) {
+        el.classList.add('status-2xx');
+        el.innerHTML = `<span class="status-badge ok">${status}</span>${body}`;
+    } else {
+        el.classList.add('status-4xx');
+        el.innerHTML = `<span class="status-badge warn">${status}</span>${body}`;
+    }
+}
+
+// ─── API call ─────────────────────────────────────────────────────────────────
+async function callAPI(route, body) {
+    try {
+        const resp = await fetch(BASE + route, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const data = await resp.json().catch(() => ({}));
+        return { ok: resp.status, data };
+    } catch (err) {
+        return { ok: null, error: err.message };
+    }
+}
+
+// ─── Manual test ──────────────────────────────────────────────────────────────
+async function manualTest(route) {
+    const ta = document.getElementById('json-' + route);
+    const el = document.getElementById('resp-' + route);
+    el.className = 'response-area idle';
+    el.innerHTML = '⏳ Chargement…';
+    let body;
+    try {
+        body = JSON.parse(ta.value);
+    } catch {
+        el.className = 'response-area status-error';
+        el.textContent = '❌ JSON invalide dans le formulaire.';
+        return;
+    }
+    const res = await callAPI('/matrices/' + route, body);
+    if (res.error !== undefined) {
+        el.className = 'response-area status-error';
+        el.innerHTML = `<span class="status-badge err">ERR</span>Impossible de se connecter au serveur.\nVérifiez que le service tourne sur ${BASE}\n\nErreur : ${res.error}`;
+        return;
+    }
+    const sc = res.ok;
+    const json = JSON.stringify(res.data, null, 2);
+    renderResponse(el, sc, '\n' + json);
+}
+
+// ─── Per-route auto-test (returns array of results) ───────────────────────────
+async function runRouteTests(route) {
+    const cases = TEST_CASES[route];
+    const container = document.getElementById('tc-' + route);
+    container.innerHTML = '';
+    const results = [];
+
+    for (let i = 0; i < cases.length; i++) {
+        const tc = cases[i];
+
+        // Create row
+        const row = document.createElement('div');
+        row.className = 'tc-row';
+
+        const badge = document.createElement('span');
+        badge.className = 'tc-badge pending';
+        badge.textContent = '…';
+
+        const label = document.createElement('span');
+        label.className = 'tc-name';
+        label.textContent = tc.name;
+
+        row.appendChild(badge);
+        row.appendChild(label);
+        container.appendChild(row);
+
+        // Execute
+        const res = await callAPI('/matrices/' + route, tc.body);
+
+        let passed = false;
+        if (res.error !== undefined) {
+            badge.className = 'tc-badge fail';
+            badge.textContent = 'ERR';
+        } else {
+            const statusOk = res.ok === tc.expectStatus;
+            let resultOk = true;
+            if (tc.expectResult !== undefined) {
+                resultOk = compareResults(res.data.resultat ?? res.data.result ?? res.data.determinant ?? res.data.inverse ?? res.data, tc.expectResult);
+            }
+            passed = statusOk && resultOk;
+            badge.className = passed ? 'tc-badge pass' : 'tc-badge fail';
+            badge.textContent = passed ? 'PASS' : 'FAIL';
+        }
+
+        results.push({ route, tc, res, passed });
+    }
+
+    return results;
+}
+
+// ─── Run all tests ────────────────────────────────────────────────────────────
+async function runAllTests() {
+    const btn = document.getElementById('btn-all');
+    btn.disabled = true;
+    btn.textContent = '⏳ Exécution en cours…';
+
+    const summary = document.getElementById('summary');
+    const tbody = document.getElementById('summary-body');
+    summary.style.display = 'block';
+    tbody.innerHTML = '';
+    document.getElementById('summary-title').textContent = '⏳ Exécution…';
+
+    const routes = ['add', 'multiply', 'transpose', 'determinant', 'inverse'];
+    const allResults = [];
+    let globalPass = 0, globalFail = 0;
+
+    for (const route of routes) {
+        const results = await runRouteTests(route);
+        allResults.push(...results);
+    }
+
+    allResults.forEach((r, idx) => {
+        const tr = document.createElement('tr');
+        const routeOp = r.route.charAt(0).toUpperCase() + r.route.slice(1);
+        const actualVal = r.res.error !== undefined
+            ? 'ERR'
+            : JSON.stringify(r.res.data.resultat ?? r.res.data.result ?? r.res.data.determinant ?? r.res.data.inverse ?? r.res.data).substring(0, 30);
+        const expectVal = r.tc.expectResult !== undefined ? JSON.stringify(r.tc.expectResult).substring(0, 30) : '—';
+        const statusOk = r.res.error !== undefined ? false : r.res.ok === r.tc.expectStatus;
+
+        tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>/matrices/${r.route}</td>
+            <td>${r.tc.name}</td>
+            <td><code>${expectVal}</code></td>
+            <td><code>${actualVal}</code></td>
+            <td class="${r.passed ? 'pass' : 'fail'}">${r.passed ? '✅ PASS' : '❌ FAIL'}</td>
+        `;
+        tbody.appendChild(tr);
+
+        if (r.passed) globalPass++; else globalFail++;
+    });
+
+    const total = globalPass + globalFail;
+    document.getElementById('summary-title').innerHTML =
+        `📊 <strong>${globalPass}/${total} tests passés</strong>` +
+        (globalFail === 0
+            ? ' &nbsp;<span style="color:#3fb950">— Tout est bon ! 🎉</span>'
+            : ` &nbsp;<span style="color:#f85149">— ${globalFail} échec(s)</span>`);
+
+    btn.disabled = false;
+    btn.textContent = '🚀 Lancer tous les tests';
+}
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"8607d2a720d14b038279025b2b5a82e5","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
