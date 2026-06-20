@@ -1,3 +1,21 @@
 .env
 __pycache__
 lib/*.dll
+# Environnements virtuels Python
+venv/
+env/
+.venv/
+
+# Python compile
+*.pyc
+*.pyo
+
+# Autres bibliotheques compilees (selon OS)
+lib/*.so
+lib/*.dylib
+
+# Editeur / systeme
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
